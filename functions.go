@@ -2,40 +2,23 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	http "net/http"
 	"os"
+	"strconv"
 )
 
-func chckstat(target, file string) {
-	if target != "" {
-		resp, err := http.Get(target)
-		if err != nil {
-			fmt.Printf("Target: %v Does not exist", target)
-			os.Exit(0)
-		}
-		fmt.Printf("Target: %v \t Status Code: %v\n", target, resp.StatusCode)
-	} else {
-		tlist := readfile(file)
-		for _, c := range tlist {
-			resp, err := http.Get(c)
-			if err != nil {
-				fmt.Printf("Target: %v Does not exist", c)
-				os.Exit(0)
-			}
-			fmt.Printf("Target: %v \t Status Code: %v\n", c, resp.StatusCode)
-		}
+func chckstat(target string, ch chan string) {
+	resp, _ := http.Get(target)
+	if resp.StatusCode != 404 && resp.StatusCode != 301 {
+		ch <- target + "\t" + strconv.Itoa(resp.StatusCode)
 	}
 }
 
-func direnum(target, wordlist string) {
-	lines := readfile(wordlist)
-	for _, c := range lines {
-		resp, _ := http.Get(target + "/" + c)
-		if resp.StatusCode != 404 && resp.StatusCode != 301 {
-			fmt.Printf("/%v \t -> %v\n", c, resp.StatusCode)
-		}
+func direnum(target, dire string, ch chan string) {
+	resp, _ := http.Get(target + "/" + dire)
+	if resp.StatusCode != 404 && resp.StatusCode != 301 {
+		ch <- "/" + dire + "\t ->" + " " + strconv.Itoa(resp.StatusCode)
 	}
 }
 
