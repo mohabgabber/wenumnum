@@ -2,50 +2,45 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 )
 
-func validate(target, file string) {
-	if file != "" && target != "" {
-		log.Fatal("You can only provide a target or a file containing targets not both")
+func validate(target, file, wordlist string, stat, dir bool) {
+	if (stat && dir) || (!stat && !dir) {
+		log.Fatal("You have to choose one operation")
 	}
-	if file == "" && target == "" {
-		log.Fatal("You didn't provide any target or file")
+	if dir && wordlist == "" {
+		log.Fatal("You have to provide a wordlist for enumeration")
+	}
+	if (target == "" && file == "") || (target != "" && file != "") {
+		log.Fatal("You have to provide either a single target or a list of targets")
+	}
+}
+
+func exec(target, file, wordlist string, stat, dir bool) {
+	validate(target, file, wordlist, stat, dir)
+	if stat {
+		chckstat(target, file)
+	} else if dir {
+		direnum(target, wordlist)
 	}
 }
 
 func main() {
-	file := ""
-	target := ""
-	quiet := false
-	var stat bool
-	var tlist []string
+	var (
+		file     string
+		target   string
+		wordlist string
+		stat     bool
+		dir      bool
+	)
+
 	flag.StringVar(&target, "t", "", "An ip or domain address to target")
 	flag.StringVar(&file, "f", "", "File containing a list of targets (One target per line)")
+	flag.StringVar(&wordlist, "w", "", "a Wordlist for enumeration (used with directory enumeration only)")
 	flag.BoolVar(&stat, "s", false, "Check if there is a functioning website on target(s)")
-	flag.BoolVar(&quiet, "q", false, "Print results directly without header (Use if you wanna pipe the results)")
+	flag.BoolVar(&dir, "d", false, "Enumerate directories on target(s)")
 	flag.Parse()
-	validate(target, file)
 
-	if file != "" {
-		tlist = readfile(file)
-	}
-	if !quiet {
-		fmt.Println("This script provides multiple functionalities for enumeratiing web applications")
-		if file != "" {
-			fmt.Println("Enumerating targets from file: ", file)
-			fmt.Println("Targets count: ", len(tlist))
-		} else {
-			fmt.Println("Targeting: ", target)
-		}
-		fmt.Println("---------------------------------------")
-	}
-	if stat {
-		if file != "" {
-			chckstat(target, tlist)
-		} else {
-			chckstat(target, tlist)
-		}
-	}
+	exec(target, file, wordlist, stat, dir)
 }
